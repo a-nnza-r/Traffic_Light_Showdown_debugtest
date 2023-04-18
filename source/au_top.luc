@@ -1,0 +1,109 @@
+module au_top (
+    input clk,              // 100MHz clock
+    input rst_n,            // reset button (active low)
+    output led [8],         // 8 user controllable LEDs
+    input usb_rx,           // USB->Serial input
+    output usb_tx,          // USB->Serial output
+    output io_led [3][8],   // LEDs on IO Shield
+    output io_seg [8],      // 7-segment LEDs on IO Shield
+    output io_sel [4],      // Digit select on IO Shield
+    input io_button [5],    // 5 buttons on IO Shield
+    input io_dip [3][8]    // DIP switches on IO Shield
+    
+    //input player_buttons[6]
+    //input reset_game_button
+    //output csled[5]
+    
+  ) {
+  
+  sig rst;                  // reset signal
+  
+ 
+  multi_seven_seg seg(.clk(clk), .rst(rst));  // seven seg
+  
+  .clk(clk) {
+    // The reset conditioner is used to synchronize the reset signal to the FPGA
+    // clock. This ensures the entire FPGA comes out of reset at the same time.
+    reset_conditioner reset_cond;
+    button_conditioner game_reset_btn_cond;
+    button_conditioner player_button_cond[6];
+    game_datapath_mod game_machine;
+    edge_detector player_buttons_detectors[6];
+    edge_detector reset_button_detector;
+    
+    //debug
+    button_conditioner next_state_btn_ctd;
+    edge_detector next_state_btn_detect;
+    button_conditioner increse_time_btn_ctd;
+    edge_detector increse_time_btn_detect;
+  }
+  sig player_button[6];
+  
+  always {
+    reset_cond.in = ~rst_n; // input raw inverted reset signal
+    rst = reset_cond.out;   // conditioned reset
+    
+    usb_tx = usb_rx;        // loop serial port
+    
+    led = 8h00;             // turn LEDs off
+    
+    io_led = 3x{{8h00}};    // turn LEDs off
+    io_seg = 8hff;          // turn segments off
+    io_sel = 4hf;           // select no digits
+    
+    io_seg = ~seg.seg;      // connect segments to the driver
+    io_sel = ~seg.sel;      // connect digit select to the driver
+    
+    //setting innitial values to zero 
+    seg.values = {b1111, b1111, b1111, b1111};
+    
+    // tester code 
+    //player_button[5] = io_button[3];
+    player_button[5] = b0;
+    player_button[4] = b0;
+    player_button[3] = b0;
+    //player_button[4] = io_button[1];
+    //player_button[3] = io_button[4];
+    
+    player_button[2] = b0;
+    player_button[1] = io_button[1];
+    player_button[0] = io_button[4];
+    //player_button[2] = b0;
+    //player_button[1] = b0;
+    player_button[2] = b0;
+    
+    
+    //debug 
+    next_state_btn_ctd.in = io_button[2];
+    increse_time_btn_ctd.in = io_button[3]; 
+    next_state_btn_detect.in = next_state_btn_ctd.out;
+    increse_time_btn_detect.in = increse_time_btn_ctd.out;    
+    game_machine.next_state_btn = next_state_btn_detect.out;
+    game_machine.increase_time = increse_time_btn_detect.out;
+    
+    // defining button conditioners
+    game_reset_btn_cond.in = io_button[0];
+    player_button_cond.in = player_button;
+    
+    // button detector 
+    reset_button_detector.in = game_reset_btn_cond.out; 
+    player_buttons_detectors.in = player_button_cond.out;
+    
+    // defining game machine inputs 
+    game_machine.rst = rst; 
+    game_machine.buttons = player_buttons_detectors.out ; 
+    game_machine.reset_button = reset_button_detector.out ;
+    
+    // attaching the game machine output ot 7 seg unit 
+    seg.values = {game_machine.round_no,
+                  game_machine.countdown,
+                  game_machine.p1_score,
+                  game_machine.p2_score};
+      
+    //debugger led
+    io_led[2][7] = game_machine.debugp2ban;
+    io_led[2][6:0] = game_machine.current_state;
+    io_led[1][7:5] = game_machine.debugp2btn;
+    io_led[1][2:0] = game_machine.debugansreg;
+    io_led[0] = game_machine.debugregF[7:0];
+}

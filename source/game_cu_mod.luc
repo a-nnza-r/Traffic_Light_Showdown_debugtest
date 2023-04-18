@@ -1,0 +1,844 @@
+module game_cu_mod (
+    input clk,  // clock
+    input rst,  // reset
+    
+    input regfile_rb_direct[16],
+    input slow_clock,
+    input buttons[6],
+    input reset_button, 
+    
+    output alufn[6],
+    output asel[3],
+    output bsel[3],
+    output wdsel[3],
+    output regfile_write_address[4],
+    output regfile_read_address_a[4],
+    output regfile_read_address_b[4],
+    output we_regfile, 
+    output seg_sel,
+    output rrg_generate_next, 
+    
+    //debugger code
+    output current_state [6],
+    input next_ste_btn
+  ) {
+    .clk(clk){
+    fsm game_fsm= { 
+            O1,
+            O2,
+            O3,
+            IN_GAME_IDLE,
+            STORE_P2,
+            STORE_P1,
+            CHECK_P1,
+            BRANCH_P1_OR_P2,
+            CHECK_P2_BAN,
+            BRANCH_P2_BAN,
+            IS_P2_CORRECT,
+            BRANCH_P2_CORRECT,
+            SET_P2_BAN,
+            INCREASE_P2,
+            CHECK_P1_BAN,
+            BRANCH_P1_BAN,
+            IS_P1_CORRECT,
+            BRANCH_P1_CORRECT,
+            SET_P1_BAN,
+            INCREASE_P1,
+            CHECK_ROUNDS_GT_8,
+            BRANCH_ROUNDS_1,
+            INC_ROUNDS,
+            SET_COUNTDOWN_1,
+            CHECK_ROUNDS_LE_3,
+            BRANCH_ROUNDS_2,
+            SET_COUNTDOWN_5,
+            CHECK_ROUNDS_LE_6,
+            SET_COUNTDOWN_3,
+            BRANCH_ROUNDS_3,
+            CHECK_P1_BAN_GT_0,
+            BRANCH_P1_BAN_PURPLE,
+            DECREMENT_P1_BAN,
+            CHECK_P2_BAN_GT_0,
+            BRANCH_P2_BAN_PURPLE,
+            DECREMENT_P2_BAN,
+            CHECK_COUNTDOWN_GT_0_PURPLE,
+            BRANCH_COUNTDOWN,
+            DECREMENT_COUNTDOWN,
+            P1_CMPEQ_P2,
+            BRANCH_DRAW,
+            DRAW,
+            CHECK_WINNER,
+            BRANCH_WINNER,
+            P1_WINS,
+            P2_WINS,
+            GAMEOVER,
+            SET_ROUNDS_1,
+            SET_ROUND_COUNTDOWN_5,
+            PRE_IDLE,
+            RESET_P1_BTN,
+            RESET_P2_BTN
+    };
+   
+  }
+
+  always { 
+    // default output values 
+    alufn = 6b0 ;
+    asel  = 3b0 ;
+    bsel  = 3b0 ;
+    regfile_read_address_a  = 4h0 ; 
+    regfile_read_address_b  = 4h0 ;
+    regfile_write_address  = 4hD ;
+    we_regfile  = b0 ; 
+    wdsel  = 3b000 ;
+    seg_sel  = b0 ; 
+    
+    //debugg
+    current_state  = 8b0;
+
+    // default values for rrg_unit 
+    rrg_generate_next = b0 ;
+
+   if(rst){
+    game_fsm.d = game_fsm.SET_ROUNDS_1;
+   } 
+   else if (reset_button){
+     game_fsm.d = game_fsm.SET_ROUNDS_1;
+   }
+   else {
+    case(game_fsm.q){ 
+      
+      game_fsm.O1: 
+        wdsel  = 3b101 ;
+        regfile_write_address  = 4hB;
+        we_regfile  = b1; 
+        //game_fsm.d = game_fsm.O2;  
+
+        //debug 
+        current_state  = 8h1;  
+        if(next_ste_btn){game_fsm.d = game_fsm.O2;}  
+      
+      game_fsm.O2: 
+        alufn = 6b011000 ;
+        asel  = 3b001;
+        we_regfile  = b1; 
+        regfile_read_address_b  = 4hB ;
+        regfile_write_address  = 4h7 ;
+        //game_fsm.d = game_fsm.O3;
+
+        //debug
+        current_state  = 8h2;   
+        if(next_ste_btn){game_fsm.d = game_fsm.O3;} 
+        
+      game_fsm.O3:
+        regfile_read_address_a  = 4hB ;
+        alufn = b100001;
+        asel  = 3b000 ;
+        bsel  = 3b001 ;
+        we_regfile  = b1 ; 
+        regfile_write_address  = 4h2 ;
+
+          
+        //debug
+        current_state  = 8h3;
+        if(next_ste_btn){game_fsm.d = game_fsm.IN_GAME_IDLE;} 
+          
+        //game_fsm.d = game_fsm.IN_GAME_IDLE;
+              
+      game_fsm.IN_GAME_IDLE:
+          regfile_write_address  = 4hF ;
+          we_regfile  = b1 ; 
+          wdsel  = 3b110 ;
+          seg_sel  = b1 ; 
+          
+          //debug
+          current_state  = 8h4;
+      
+          if(reset_button){
+            game_fsm.d = game_fsm.SET_ROUNDS_1;
+          }
+            
+          else if(slow_clock){
+            game_fsm.d = game_fsm.CHECK_P1_BAN_GT_0;
+          }
+              
+          else if(|buttons){
+            game_fsm.d = game_fsm.STORE_P2;
+          }
+          else {
+            game_fsm.d = game_fsm.IN_GAME_IDLE;
+          }
+        
+      game_fsm.STORE_P2:
+        regfile_read_address_b  = 4hF ;
+        alufn = 6b011000;
+        asel  = 3b001;
+        we_regfile  = b1; 
+        regfile_write_address  = 4h6;
+        seg_sel  = b1 ;
+        //game_fsm.d = game_fsm.STORE_P1;
+
+        //debug  
+        current_state  = 8h5;  
+        if(next_ste_btn){game_fsm.d = game_fsm.STORE_P1;}
+               
+      game_fsm.STORE_P1:
+        regfile_read_address_a  = 4hF ; 
+        alufn = 6b100001;
+        bsel  = 3b001 ;
+        we_regfile  = b1 ; 
+        regfile_write_address  = 4h5 ;
+        seg_sel  = b1 ; 
+        //game_fsm.d = game_fsm.CHECK_P1;
+
+        //debug  
+        current_state = 8h6;    
+        if(next_ste_btn){game_fsm.d = game_fsm.CHECK_P1;}
+          
+        
+        
+      game_fsm.CHECK_P1:
+        alufn = 6b110101;
+        bsel  = 3b010 ;
+        regfile_read_address_a  = 4hF ;
+        regfile_write_address  = 4hC ;
+        we_regfile = b1;
+        seg_sel  = b1 ; 
+        //game_fsm.d = game_fsm.BRANCH_P1_OR_P2;
+
+        //debug
+        current_state  = 8h7;    
+        if(next_ste_btn){game_fsm.d = game_fsm.BRANCH_P1_OR_P2;}
+    
+        
+      game_fsm.BRANCH_P1_OR_P2:
+        regfile_read_address_b  = 4hC ;
+        seg_sel  = b1 ;
+
+        /*  
+        if(regfile_rb_direct == b1){
+          game_fsm.d = game_fsm.CHECK_P2_BAN;
+          }
+        else{
+          game_fsm.d = game_fsm.CHECK_P1_BAN;
+          }
+        */
+        
+        //debug
+        current_state  = 8h8;       
+        if(next_ste_btn && regfile_rb_direct == b1){ game_fsm.d = game_fsm.CHECK_P2_BAN;}
+        if(next_ste_btn && regfile_rb_direct == b0){ game_fsm.d = game_fsm.CHECK_P1_BAN;}
+
+          
+      game_fsm.CHECK_P2_BAN:
+        alufn = 6b110011; 
+        regfile_read_address_a  = 4hA ;
+        bsel = 3b011;
+        regfile_write_address  = 4hF ;
+        we_regfile  = b1 ;
+        seg_sel  = b1 ;
+        //game_fsm.d = game_fsm.BRANCH_P2_BAN;
+
+
+        //debug
+        current_state  = 8h9;  
+        if(next_ste_btn){game_fsm.d = game_fsm.BRANCH_P2_BAN;}       
+        
+        
+      game_fsm.BRANCH_P2_BAN:
+        regfile_read_address_b  = 4hF ;
+        seg_sel  = b1 ;
+
+        /*
+        if( regfile_rb_direct == b1 ){
+          game_fsm.d = game_fsm.IS_P2_CORRECT;
+          }
+       else{
+          game_fsm.d = game_fsm.IN_GAME_IDLE;
+        }
+        
+        */
+          
+        //debug 
+        current_state  = 8hA; 
+        if(next_ste_btn && regfile_rb_direct == b1){ game_fsm.d = game_fsm.IS_P2_CORRECT;}
+        if(next_ste_btn && regfile_rb_direct == b0){ game_fsm.d = game_fsm.IN_GAME_IDLE;}
+     
+                  
+      game_fsm.IS_P2_CORRECT:
+        alufn = 6b110011;
+        we_regfile  = b1 ; 
+        regfile_read_address_a  = 4h6 ; 
+        regfile_read_address_b  = 4h7 ;
+        regfile_write_address  = 4hF ;
+        seg_sel  = b1 ; 
+        //game_fsm.d = game_fsm.BRANCH_P2_CORRECT;  
+
+        //debug
+        current_state  = 8hB;
+        if(next_ste_btn){game_fsm.d = game_fsm.BRANCH_P2_CORRECT;}
+        
+        
+      game_fsm.BRANCH_P2_CORRECT:
+        regfile_read_address_b  = 4hF ;
+        seg_sel  = b1 ;
+
+         /*
+        if(regfile_rb_direct == b0 ){
+          game_fsm.d = game_fsm.SET_P2_BAN;
+          }
+        else{
+          game_fsm.d = game_fsm.INCREASE_P2;
+          }
+        */
+        //debug 
+        current_state  = 8hC;
+        if(next_ste_btn && regfile_rb_direct == b1){ game_fsm.d = game_fsm.INCREASE_P2;}
+        if(next_ste_btn && regfile_rb_direct == b0){ game_fsm.d = game_fsm.SET_P2_BAN;}
+        
+        
+      game_fsm.SET_P2_BAN:
+        alufn = 6b000011;
+        we_regfile  = b1 ; 
+        regfile_read_address_a  = 4hA ; 
+        regfile_write_address  = 4hA ;
+        seg_sel  = b1 ;
+        game_fsm.d = game_fsm.RESET_P2_BTN;
+
+
+        //debug 
+        current_state  = 8hD;     
+        //if(next_ste_btn){game_fsm.d = game_fsm.IN_GAME_IDLE;}
+        
+      game_fsm.RESET_P2_BTN:
+        wdsel = b100;
+        regfile_write_address = 4h6;
+        we_regfile = b1; 
+        game_fsm.d = game_fsm.IN_GAME_IDLE;
+             
+      game_fsm.INCREASE_P2:
+        alufn = 6b000011;
+        we_regfile  = b1 ; 
+        regfile_read_address_a  = 4h1 ; 
+        regfile_write_address  = 4h1 ;
+        game_fsm.d = game_fsm.CHECK_ROUNDS_GT_8;
+
+        //debug
+        current_state  = 8hE;
+        //if(next_ste_btn){game_fsm.d = game_fsm.CHECK_ROUNDS_GT_9;}
+        
+          
+          
+      game_fsm.CHECK_P1_BAN:
+        alufn = 6b110011;
+        bsel = 3b011; 
+        regfile_read_address_a  = 4h9 ;
+        regfile_write_address  = 4hE ;
+        we_regfile  = b1 ; 
+        seg_sel  = 3b1 ; 
+        //game_fsm.d = game_fsm.BRANCH_P1_BAN;
+        
+        //debug
+        current_state  = 8hF;    
+        if(next_ste_btn){game_fsm.d = game_fsm.BRANCH_P1_BAN;}
+        
+      game_fsm.BRANCH_P1_BAN:
+        regfile_read_address_b  = 4hE ;
+        seg_sel  = b1 ; 
+          
+        /*
+        if(regfile_rb_direct == b1 ){
+          game_fsm.d = game_fsm.IS_P1_CORRECT;
+          }
+        else{
+          game_fsm.d = game_fsm.IN_GAME_IDLE;
+        }
+        */ 
+
+        //debug   
+        current_state  = 8h10;
+        if(next_ste_btn && regfile_rb_direct == b1){ game_fsm.d = game_fsm.IS_P1_CORRECT;}
+        if(next_ste_btn && regfile_rb_direct == b0){ game_fsm.d = game_fsm.IN_GAME_IDLE;}
+        
+          
+      game_fsm.IS_P1_CORRECT:
+        regfile_read_address_a  = 4h5 ; 
+        regfile_read_address_b  = 4h7 ;
+        alufn = 6b110011;
+        we_regfile  = b1 ; 
+        regfile_write_address  = 4hE ;
+        seg_sel  = b1 ; 
+        //game_fsm.d = game_fsm.BRANCH_P1_CORRECT;
+          
+        //debug
+        current_state  = 8h11;  
+        if(next_ste_btn){game_fsm.d = game_fsm.BRANCH_P1_CORRECT;}
+       
+        
+      game_fsm.BRANCH_P1_CORRECT:
+        regfile_read_address_b  = 4hE ;
+        seg_sel  = b1 ; 
+
+        /*            
+        if(regfile_rb_direct == b1 ){
+          game_fsm.d = game_fsm.INCREASE_P1;
+        }else{
+          game_fsm.d = game_fsm.SET_P1_BAN;
+          }
+        */
+
+        //debug   
+        current_state  = 8h12;
+        if(next_ste_btn && regfile_rb_direct == b1){ game_fsm.d = game_fsm.INCREASE_P1;}
+        if(next_ste_btn && regfile_rb_direct == b0){ game_fsm.d = game_fsm.SET_P1_BAN;}
+        
+        
+      game_fsm.SET_P1_BAN:
+        alufn = 6b000011;
+        we_regfile  = b1 ; 
+        regfile_read_address_a  = 4h9 ; 
+        regfile_write_address  = 4h9 ;
+        seg_sel  = b1 ; 
+        game_fsm.d = game_fsm.RESET_P1_BTN;
+           
+        //debug  
+        current_state  = 8h13;
+        //if(next_ste_btn){game_fsm.d = game_fsm.IN_GAME_IDLE;}
+        
+      game_fsm.RESET_P1_BTN:
+        wdsel = b100;
+        regfile_write_address = 4h5;
+        we_regfile = b1; 
+        game_fsm.d = game_fsm.IN_GAME_IDLE;
+          
+          
+      game_fsm.INCREASE_P1:
+        alufn = 6b000011;
+        we_regfile  = b1 ; 
+        regfile_write_address = 8h0;
+        game_fsm.d = game_fsm.CHECK_ROUNDS_GT_8;
+        
+        //debug
+        current_state  = 8h14;
+        //if(next_ste_btn){game_fsm.d = game_fsm.CHECK_ROUNDS_GT_8;}
+        
+      game_fsm.CHECK_ROUNDS_GT_8:
+        alufn = 6b110101;
+        asel  = 3b010 ;
+        we_regfile  = b1 ; 
+        regfile_read_address_b  = 4h4 ;
+        regfile_write_address  = 4hF ;
+        //game_fsm.d = game_fsm.BRANCH_ROUNDS_1;
+
+
+        //debug
+        current_state  = 8h15;
+        if(next_ste_btn){game_fsm.d = game_fsm.BRANCH_ROUNDS_1;}
+        
+       game_fsm.BRANCH_ROUNDS_1:
+          regfile_read_address_b  = 4hF ;
+          
+           if(regfile_rb_direct == b0){
+          // // ask the rrg unit to generate the next word
+          // // only call this once per round cycle 
+             rrg_generate_next = b1; 
+             game_fsm.d = game_fsm.INC_ROUNDS;
+           }
+           else{
+             game_fsm.d = game_fsm.P1_CMPEQ_P2;
+           }
+
+          //debug
+          current_state  = 8h16;
+          //if(next_ste_btn && regfile_rb_direct == b1){ game_fsm.d = game_fsm.P1_CMPEQ_P2;}
+          //if(next_ste_btn && regfile_rb_direct == b0){ rrg_generate_next = b1; game_fsm.d = game_fsm.INC_ROUNDS;}
+        
+      game_fsm.INC_ROUNDS:
+        alufn = 6b000011;
+        we_regfile  = b1 ; 
+        regfile_read_address_a  = 4h4 ; 
+        regfile_write_address  = 4h4 ;
+        game_fsm.d = game_fsm.SET_COUNTDOWN_1;
+
+        //debug
+        current_state  = 8h17;
+        //if(next_ste_btn){game_fsm.d = game_fsm.SET_COUNTDOWN_1;}
+      
+        
+      game_fsm.SET_COUNTDOWN_1:
+        we_regfile  = b1 ; 
+        regfile_write_address  = 4h8 ;
+        wdsel  = 3b001 ;
+        //game_fsm.d = game_fsm.CHECK_ROUNDS_LE_3;
+
+        //debug
+        current_state  = 8h17;
+        if(next_ste_btn){game_fsm.d = game_fsm.CHECK_ROUNDS_LE_3;} 
+        
+      game_fsm.CHECK_ROUNDS_LE_3:
+        alufn = 6b110111;
+        we_regfile  = b1 ; 
+        bsel = b001;
+        regfile_read_address_a  = 4h4 ; 
+        regfile_write_address  = 4hF ;
+        //game_fsm.d = game_fsm.BRANCH_ROUNDS_2;
+
+
+        //debug
+        current_state  = 8h17;
+        if(next_ste_btn){game_fsm.d = game_fsm.BRANCH_ROUNDS_2;}
+      
+        
+      game_fsm.BRANCH_ROUNDS_2:
+        regfile_read_address_b  = 4hF ;
+
+         if(regfile_rb_direct == b1){
+           game_fsm.d = game_fsm.SET_COUNTDOWN_5;
+         } 
+         else{
+           game_fsm.d = game_fsm.CHECK_ROUNDS_LE_6;
+         }
+
+        //debug
+        current_state  = 8h18;
+        //if(next_ste_btn && regfile_rb_direct == b1){ game_fsm.d = game_fsm.SET_COUNTDOWN_5;}
+        //if(next_ste_btn && regfile_rb_direct == b0){ game_fsm.d = game_fsm.CHECK_ROUNDS_LE_6;}
+      
+        
+      game_fsm.SET_COUNTDOWN_5:
+        we_regfile  = b1 ;
+        regfile_write_address  = 4h8 ;
+        wdsel  = 3b011 ;
+        //game_fsm.d = game_fsm.O1;
+
+        //debug
+        current_state  = 8h19;
+        if(next_ste_btn){game_fsm.d = game_fsm.O1;}
+        
+        
+      game_fsm.CHECK_ROUNDS_LE_6:
+        alufn = 6b110111;
+        regfile_read_address_a  = 4h4 ;
+        bsel  = 3b010 ;
+        we_regfile  = b1 ; 
+        regfile_write_address  = 4hF ;
+        //game_fsm.d = game_fsm.BRANCH_ROUNDS_3;
+       
+       //debug 
+        current_state  = 8h1A;
+        if(next_ste_btn){game_fsm.d = game_fsm.BRANCH_ROUNDS_3;}
+        
+      game_fsm.SET_COUNTDOWN_3:
+        we_regfile  = b1 ; 
+        regfile_write_address  = 4h8 ;
+        wdsel  = 3b010 ;
+        //game_fsm.d = game_fsm.O1;
+
+        //debug
+        current_state  = 8h1B;
+        if(next_ste_btn){game_fsm.d = game_fsm.O1;}
+        
+      game_fsm.BRANCH_ROUNDS_3:
+        regfile_read_address_b  = 4hF ;
+        if(regfile_rb_direct == b1){
+           game_fsm.d = game_fsm.SET_COUNTDOWN_3;
+         }
+         else{
+           game_fsm.d = game_fsm.O1;
+         }
+
+        //debug
+        current_state  = 8h1C;
+        //if(next_ste_btn && regfile_rb_direct == b1){ game_fsm.d = game_fsm.SET_COUNTDOWN_3;}
+        //if(next_ste_btn && regfile_rb_direct == b0){ game_fsm.d = game_fsm.O1;}
+      
+        
+      game_fsm.CHECK_P1_BAN_GT_0:
+        alufn = 6b110101;
+        asel  = 3b100 ;
+        we_regfile  = b1 ; 
+        regfile_read_address_b  = 4h9 ;
+        regfile_write_address  = 4hF ;
+        seg_sel  = b1 ; 
+        //game_fsm.d = game_fsm.BRANCH_P1_BAN_PURPLE;
+
+        //debug
+        current_state  = 8h1D;
+        if(next_ste_btn){game_fsm.d = game_fsm.BRANCH_P1_BAN_PURPLE;}
+        
+        
+        
+      game_fsm.BRANCH_P1_BAN_PURPLE:
+        regfile_read_address_b  = 4hF ;
+        seg_sel  = b1 ;
+
+        if(regfile_rb_direct == b0 ){
+           game_fsm.d = game_fsm.CHECK_P2_BAN_GT_0;
+         }
+         else{
+           game_fsm.d = game_fsm.DECREMENT_P1_BAN;
+         }
+
+        //debug
+        current_state  = 8h1E;
+        //if(next_ste_btn && regfile_rb_direct == b1){ game_fsm.d = game_fsm.DECREMENT_P1_BAN;}
+        //if(next_ste_btn && regfile_rb_direct == b0){ game_fsm.d = game_fsm.CHECK_P2_BAN_GT_0;}
+        
+      game_fsm.DECREMENT_P1_BAN:
+        alufn = 6b011010;
+        asel = b100 ;
+        we_regfile  = b1 ; 
+        regfile_write_address  = 4h9 ;
+        seg_sel  = b1 ; 
+        game_fsm.d = game_fsm.CHECK_P2_BAN_GT_0;
+
+        //debug 
+        current_state  = 8h1F;
+        //if(next_ste_btn){game_fsm.d = game_fsm.CHECK_P2_BAN_GT_0;}
+    
+        
+      game_fsm.CHECK_P2_BAN_GT_0:
+        alufn = 6b110101;
+        asel  = 3b100 ;
+        we_regfile  = b1 ; 
+        regfile_read_address_b  = 4hA ;
+        regfile_write_address  = 4hE ;
+        seg_sel  = b1 ;
+        //game_fsm.d = game_fsm.BRANCH_P2_BAN_PURPLE;
+
+        //debug 
+        current_state  = 8h20;
+        if(next_ste_btn){game_fsm.d = game_fsm.BRANCH_P2_BAN_PURPLE;}
+        
+        
+        
+      game_fsm.BRANCH_P2_BAN_PURPLE:
+        regfile_read_address_b  = 4hE ;
+        seg_sel  = b1 ;
+        if (regfile_rb_direct == b0) {
+           game_fsm.d = game_fsm.CHECK_COUNTDOWN_GT_0_PURPLE;
+         }
+         else {
+           game_fsm.d = game_fsm.DECREMENT_P2_BAN;
+         }
+
+        //debug
+        current_state  = 8h21;
+        //if(next_ste_btn && regfile_rb_direct == b1){ game_fsm.d = game_fsm.DECREMENT_P2_BAN;}
+        //if(next_ste_btn && regfile_rb_direct == b0){ game_fsm.d = game_fsm.CHECK_COUNTDOWN_GT_0_PURPLE;}
+        
+        
+      game_fsm.DECREMENT_P2_BAN:
+        alufn = 6b011010;
+        asel = b100 ;
+        we_regfile  = b1 ;  
+        regfile_write_address  = 4hA ;
+        seg_sel  = b1 ; 
+        game_fsm.d = game_fsm.CHECK_COUNTDOWN_GT_0_PURPLE;
+
+        //debug 
+        current_state  = 8h22;
+        //if(next_ste_btn){game_fsm.d = game_fsm.CHECK_COUNTDOWN_GT_0_PURPLE;} 
+      
+        
+      game_fsm.CHECK_COUNTDOWN_GT_0_PURPLE:
+        alufn = 6b110111;
+        regfile_read_address_a  = 4h8 ;
+        regfile_read_address_b  = 4h0 ;
+        asel  = 3b000 ; 
+        bsel  = 3b011 ;
+        regfile_write_address  = 4hF ;
+        wdsel  = 3b000 ;  
+        we_regfile  = b1 ; 
+        seg_sel  = b1 ; 
+        game_fsm.d = game_fsm.BRANCH_COUNTDOWN;
+ 
+        //debug
+        current_state  = 8h22;
+        if(next_ste_btn){game_fsm.d = game_fsm.BRANCH_COUNTDOWN;}
+        
+        
+      game_fsm.BRANCH_COUNTDOWN:
+        regfile_read_address_b  = 4hF ;
+        seg_sel  = b1 ; 
+
+         if (regfile_rb_direct == b1) {
+           game_fsm.d = game_fsm.CHECK_ROUNDS_GT_8;
+           }
+         else {
+           game_fsm.d = game_fsm.DECREMENT_COUNTDOWN;
+          }
+
+        //debug
+        current_state  = 8h23;
+        //if(next_ste_btn && regfile_rb_direct == b0){ game_fsm.d = game_fsm.DECREMENT_COUNTDOWN;}
+        //if(next_ste_btn && regfile_rb_direct == b1){ game_fsm.d = game_fsm.CHECK_ROUNDS_GT_9;}
+        
+      game_fsm.DECREMENT_COUNTDOWN:
+        alufn = 6b000001;
+        regfile_read_address_a  = 4h8 ; 
+        asel = 3b000; 
+        bsel  = 3b100 ;
+        wdsel = 3b000;
+        we_regfile  = b1 ; 
+        regfile_write_address  = 4h8 ;
+        seg_sel  = b1 ; 
+        game_fsm.d = game_fsm.IN_GAME_IDLE; 
+
+        //debug 
+        current_state  = 8h24;
+        //if(next_ste_btn){game_fsm.d = game_fsm.IN_GAME_IDLE;}
+      
+        
+        
+      game_fsm.P1_CMPEQ_P2:
+        alufn = 6b110011;
+        we_regfile  = b1 ; 
+        regfile_read_address_b  = 4h1 ;
+        regfile_write_address  = 4hF ;
+        //game_fsm.d = game_fsm.BRANCH_DRAW;
+
+        //debug
+        current_state  = 8h25;
+        if(next_ste_btn){game_fsm.d = game_fsm.BRANCH_DRAW;}
+        
+        
+        
+      game_fsm.BRANCH_DRAW:
+        regfile_read_address_b  = 4hF ;
+        if (regfile_rb_direct == b1) { 
+           game_fsm.d = game_fsm.DRAW; 
+         }
+         else {
+           game_fsm.d = game_fsm.CHECK_WINNER;
+         }
+        
+        //debug
+        current_state  = 8h26;
+        //if(next_ste_btn && regfile_rb_direct == b1){ game_fsm.d = game_fsm.DRAW;}
+        //if(next_ste_btn && regfile_rb_direct == b0){ game_fsm.d = game_fsm.CHECK_WINNER;}
+        
+
+
+        
+      game_fsm.DRAW:
+        alufn = b000010;
+        asel  = 3b001 ;
+        bsel  = 3b001 ;
+        we_regfile  = b1 ; 
+        regfile_write_address  = 4h2 ;
+        //game_fsm.d = game_fsm.GAMEOVER;
+
+        //debug
+        current_state  = 8h27;
+        if(next_ste_btn){game_fsm.d = game_fsm.GAMEOVER;} 
+        
+        
+      game_fsm.CHECK_WINNER:
+        alufn = 6b110101;
+        we_regfile  = b1 ; 
+        regfile_read_address_b  = 4h1 ;
+        regfile_write_address  = 4hD ;
+        //game_fsm.d = game_fsm.BRANCH_WINNER;
+
+        //debug
+        current_state  = 8h28;
+        if(next_ste_btn){game_fsm.d = game_fsm.BRANCH_WINNER;}
+      
+        
+        
+      game_fsm.BRANCH_WINNER:
+        regfile_read_address_b  = 4hD ;
+        if(regfile_rb_direct == b0){
+           game_fsm.d = game_fsm.P1_WINS;
+         }
+         else{
+           game_fsm.d = game_fsm.P2_WINS;
+         }
+        
+        //debug
+        current_state  = 8h29;
+        //if(next_ste_btn && regfile_rb_direct == b1){ game_fsm.d = game_fsm.P2_WINS;}
+        //if(next_ste_btn && regfile_rb_direct == b0){ game_fsm.d = game_fsm.P1_WINS;}
+        
+        
+        
+      game_fsm.P1_WINS:
+        alufn = b000010;
+        asel  = 3b010 ;
+        bsel  = 3b001 ;
+        we_regfile  = b1 ; 
+        regfile_write_address  = 4h2 ;
+        //game_fsm.d = game_fsm.GAMEOVER;
+
+        //debug
+        current_state  = 8h2A;
+        if(next_ste_btn){game_fsm.d = game_fsm.GAMEOVER;}
+      
+        
+        
+      game_fsm.P2_WINS:
+        alufn = b100001;
+        asel  = 3b101 ;
+        bsel  = 3b001 ;
+        we_regfile  = b1 ; 
+        regfile_write_address  = 4h2 ;
+        //game_fsm.d = game_fsm.GAMEOVER;
+
+
+        //debug
+        current_state  = 8h2B;
+        if(next_ste_btn){game_fsm.d = game_fsm.GAMEOVER;}
+        
+        
+      game_fsm.GAMEOVER:
+        seg_sel  = b1 ; 
+        if(|buttons){
+          game_fsm.d = game_fsm.SET_ROUNDS_1;
+        }else{
+          game_fsm.d = game_fsm.GAMEOVER;
+        }
+
+        //debug 
+        current_state  = 8h2C;
+      
+      game_fsm.SET_ROUNDS_1:
+        we_regfile  = b1 ; 
+        regfile_write_address  = 4h4 ;
+        wdsel  = 3b001 ;
+        //game_fsm.d = game_fsm.SET_ROUND_COUNTDOWN_5;
+
+        //debug
+        current_state  = 8h2D;
+        if(next_ste_btn){game_fsm.d = game_fsm.SET_ROUND_COUNTDOWN_5;}
+      
+        
+      game_fsm.SET_ROUND_COUNTDOWN_5:
+        we_regfile  = b1 ; 
+        regfile_write_address  = 4h8 ;
+        wdsel  = 3b011 ;
+        //game_fsm.d = game_fsm.PRE_IDLE;
+
+
+        //debug
+        current_state  = 8h2E;
+        if(next_ste_btn){game_fsm.d = game_fsm.PRE_IDLE;}
+        
+        
+      game_fsm.PRE_IDLE:
+
+        if(|buttons){
+          rrg_generate_next = b1; 
+          game_fsm.d = game_fsm.O1;
+        } 
+        else{
+          game_fsm.d = game_fsm.PRE_IDLE;
+        }
+        
+        //debug
+        current_state  = 8h2F;
+        
+    }
+      
+   }  
+  }
+}

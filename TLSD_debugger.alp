@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="TLSD_debugger" board="Alchitry Au" language="Lucid" version="3">
+  <files>
+    <src>game_cu_mod.luc</src>
+    <src>adder.luc</src>
+    <component>pipeline.luc</component>
+    <src>game_datapath_mod.luc</src>
+    <src>compare.luc</src>
+    <src top="true">au_top.luc</src>
+    <src>slow_timer_mod.luc</src>
+    <component>counter.luc</component>
+    <src>random_round_genrator.luc</src>
+    <src>alu.luc</src>
+    <component>decoder.luc</component>
+    <src>multi_seven_seg.luc</src>
+    <component>pn_gen.luc</component>
+    <src>seven_seg.luc</src>
+    <component>reset_conditioner.luc</component>
+    <component>edge_detector.luc</component>
+    <src>shifter.luc</src>
+    <component>button_conditioner.luc</component>
+    <src>regfile_mod.luc</src>
+    <src>boolean.luc</src>
+    <src>multiply.luc</src>
+    <constraint>custom.xdc</constraint>
+    <constraint>custom.acf</constraint>
+  </files>
+</project>

@@ -1,0 +1,93 @@
+module random_round_genrator (
+    input clk,  // clock
+    input rst,  // reset
+    input generate_next,
+    output out[8]
+  ) {
+    .clk(clk){
+      .rst(rst){
+        // 32 counter value is continously changing 
+        // this value will be used as the seed whenever the 
+        // generator is rst 
+        counter ctr(#TOP(32h1111), #SIZE(32));
+        pn_gen random_number_generator;
+        }
+      }
+    sig rng_out[5];
+    const ROUND_DETAILS = {
+      //repeat round_config 13 16bitword 1bitword/colour,12bitdisplay config, 3 bit correct answer
+      8b01101010,
+      //repeat round_config 12 16bitword 1bitword/colour,12bitdisplay config, 3 bit correct answer
+      8b01100100,
+      //repeat round_config 11 16bitword 1bitword/colour,12bitdisplay config, 3 bit correct answer
+      8b01011010,
+      //repeat round_config 10 16bitword 1bitword/colour,12bitdisplay config, 3 bit correct answer
+      8b01010010,
+      //repeat round_config 9 16bitword 1bitword/colour,12bitdisplay config, 3 bit correct answer
+      8b01001010,
+      //repeat round_config 8 16bitword 1bitword/colour,12bitdisplay config, 3 bit correct answer
+      8b01000001,
+      //repeat round_config 7 16bitword 1bitword/colour,12bitdisplay config, 3 bit correct answer
+      8b00111010,
+      //repeat round_config 6 16bitword 1bitword/colour,12bitdisplay config, 3 bit correct answer
+      8b00110100,
+      //repeat round_config 5 16bitword 1bitword/colour,12bitdisplay config, 3 bit correct answer
+      8b00101100,
+      //repeat round_config 4 16bitword 1bitword/colour,12bitdisplay config, 3 bit correct answer
+      8b00100100,
+      //repeat round_config 3 16bitword 1bitword/colour,12bitdisplay config, 3 bit correct answer
+      8b00011100,
+      //repeat round_config 2 16bitword 1bitword/colour,12bitdisplay config, 3 bit correct answer
+      8b00010001,
+      //repeat round_config 1 16bitword 1bitword/colour,12bitdisplay config, 3 bit correct answer
+      8b00001010,
+      //repeat round_config 0 16bitword 1bitword/colour,12bitdisplay config, 3 bit correct answer 
+      8b00000100,
+      //round_config 17 16bitword 1bitword/colour,12bitdisplay config, 3 bit correct answer
+      8b10001001,
+      //round_config 16 16bitword 1bitword/colour,12bitdisplay config, 3 bit correct answer
+      8b10000001, 
+      //round_config 15 16bitword 1bitword/colour,12bitdisplay config, 3 bit correct answer
+      8b01111001,
+      //round_config 14 16bitword 1bitword/colour,12bitdisplay config, 3 bit correct answer
+      8b01110001,
+      //round_config 13 16bitword 1bitword/colour,12bitdisplay config, 3 bit correct answer
+      8b01101010,
+      //round_config 12 16bitword 1bitword/colour,12bitdisplay config, 3 bit correct answer
+      8b01100100,
+      //round_config 11 16bitword 1bitword/colour,12bitdisplay config, 3 bit correct answer
+      8b01011010,
+      //round_config 10 16bitword 1bitword/colour,12bitdisplay config, 3 bit correct answer
+      8b01010010,
+      //round_config 9 16bitword 1bitword/colour,12bitdisplay config, 3 bit correct answer
+      8b01001010,
+      //round_config 8 16bitword 1bitword/colour,12bitdisplay config, 3 bit correct answer
+      8b01000001,
+      //round_config 7 16bitword 1bitword/colour,12bitdisplay config, 3 bit correct answer
+      8b00111010,
+      //round_config 6 16bitword 1bitword/colour,12bitdisplay config, 3 bit correct answer
+      8b00101100,
+      //round_config 5 16bitword 1bitword/colour,12bitdisplay config, 3 bit correct answer
+      8b00100100,
+      //round_config 4 16bitword 1bitword/colour,12bitdisplay config, 3 bit correct answer
+      8b00100100,
+      //round_config 3 16bitword 1bitword/colour,12bitdisplay config, 3 bit correct answer
+      8b00011100,
+      //round_config 2 16bitword 1bitword/colour,12bitdisplay config, 3 bit correct answer
+      8b00010001,
+      //round_config 1 16bitword 1bitword/colour,12bitdisplay config, 3 bit correct answer
+      8b00001010,
+      //round_config 0 16bitword 1bitword/colour,12bitdisplay config, 3 bit correct answer
+      8b00000100
+
+    };
+  always {
+    //depending on exactly when the person starts the
+    // a different seed will be loaded  
+    random_number_generator.seed = ctr.value ;
+    random_number_generator.next = generate_next ;
+    rng_out = random_number_generator.num[4:0]; 
+    // output word contain the orund details from the randomly gernerated number
+    out = ROUND_DETAILS[rng_out];
+  }
+}

@@ -1,0 +1,17 @@
+set projDir "C:/Users/ansar/Desktop/Alchitry\ Projects/traffic-light-showdown/traffic-light-showdown/work/vivado"
+set projName "traffic_light_showdown"
+set topName top
+set device xc7a35tftg256-1
+if {[file exists "$projDir/$projName"]} { file delete -force "$projDir/$projName" }
+create_project $projName "$projDir/$projName" -part $device
+set_property design_mode RTL [get_filesets sources_1]
+set verilogSources [list "C:/Users/ansar/Desktop/Alchitry\ Projects/traffic-light-showdown/traffic-light-showdown/work/verilog/au_top_0.v" "C:/Users/ansar/Desktop/Alchitry\ Projects/traffic-light-showdown/traffic-light-showdown/work/verilog/multi_seven_seg_1.v" "C:/Users/ansar/Desktop/Alchitry\ Projects/traffic-light-showdown/traffic-light-showdown/work/verilog/reset_conditioner_2.v" "C:/Users/ansar/Desktop/Alchitry\ Projects/traffic-light-showdown/traffic-light-showdown/work/verilog/button_conditioner_3.v" "C:/Users/ansar/Desktop/Alchitry\ Projects/traffic-light-showdown/traffic-light-showdown/work/verilog/game_datapath_mod_4.v" "C:/Users/ansar/Desktop/Alchitry\ Projects/traffic-light-showdown/traffic-light-showdown/work/verilog/edge_detector_5.v" "C:/Users/ansar/Desktop/Alchitry\ Projects/traffic-light-showdown/traffic-light-showdown/work/verilog/counter_6.v" "C:/Users/ansar/Desktop/Alchitry\ Projects/traffic-light-showdown/traffic-light-showdown/work/verilog/seven_seg_7.v" "C:/Users/ansar/Desktop/Alchitry\ Projects/traffic-light-showdown/traffic-light-showdown/work/verilog/decoder_8.v" "C:/Users/ansar/Desktop/Alchitry\ Projects/traffic-light-showdown/traffic-light-showdown/work/verilog/pipeline_9.v" "C:/Users/ansar/Desktop/Alchitry\ Projects/traffic-light-showdown/traffic-light-showdown/work/verilog/alu_10.v" "C:/Users/ansar/Desktop/Alchitry\ Projects/traffic-light-showdown/traffic-light-showdown/work/verilog/random_round_genrator_11.v" "C:/Users/ansar/Desktop/Alchitry\ Projects/traffic-light-showdown/traffic-light-showdown/work/verilog/regfile_mod_12.v" "C:/Users/ansar/Desktop/Alchitry\ Projects/traffic-light-showdown/traffic-light-showdown/work/verilog/game_cu_mod_13.v" "C:/Users/ansar/Desktop/Alchitry\ Projects/traffic-light-showdown/traffic-light-showdown/work/verilog/adder_14.v" "C:/Users/ansar/Desktop/Alchitry\ Projects/traffic-light-showdown/traffic-light-showdown/work/verilog/multiply_15.v" "C:/Users/ansar/Desktop/Alchitry\ Projects/traffic-light-showdown/traffic-light-showdown/work/verilog/boolean_16.v" "C:/Users/ansar/Desktop/Alchitry\ Projects/traffic-light-showdown/traffic-light-showdown/work/verilog/shifter_17.v" "C:/Users/ansar/Desktop/Alchitry\ Projects/traffic-light-showdown/traffic-light-showdown/work/verilog/compare_18.v" "C:/Users/ansar/Desktop/Alchitry\ Projects/traffic-light-showdown/traffic-light-showdown/work/verilog/counter_19.v" "C:/Users/ansar/Desktop/Alchitry\ Projects/traffic-light-showdown/traffic-light-showdown/work/verilog/pn_gen_20.v" ]
+import_files -fileset [get_filesets sources_1] -force -norecurse $verilogSources
+set xdcSources [list "C:/Users/ansar/Desktop/Alchitry\ Projects/traffic-light-showdown/traffic-light-showdown/constraint/custom.xdc" "C:/Users/ansar/Desktop/Alchitry\ Projects/traffic-light-showdown/traffic-light-showdown/work/constraint/custom.xdc" ]
+read_xdc $xdcSources
+set_property STEPS.WRITE_BITSTREAM.ARGS.BIN_FILE true [get_runs impl_1]
+update_compile_order -fileset sources_1
+launch_runs -runs synth_1 -jobs 8
+wait_on_run synth_1
+launch_runs impl_1 -to_step write_bitstream -jobs 8
+wait_on_run impl_1

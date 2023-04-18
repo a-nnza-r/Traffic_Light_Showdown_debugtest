@@ -1,0 +1,126 @@
+module regfile_mod (
+    input clk,  // clock
+    input rst,  // reset
+
+    
+    input we, // write enable
+    input data[16], // data in
+    
+    input write_address[4], // write address
+    input read_address_a[4], //address port a 
+    input read_address_b[4], //address port b
+    
+    output out_a[16], //read port a
+    output out_b[16], //read port b
+    output p1_score[16],
+    output p2_score[16],
+    output display_config[16],
+    output round_no[16],
+    output count_down[16],
+    output debugg_p1_button[3],
+    output debugansreg[3],
+    output debugp1ban,
+    output debugp2ban,
+    output debugp2btn[3],
+    output debugregF[16]
+  ) {
+      .clk(clk){
+        .rst(rst){
+          dff p1_scorereg[16];
+          dff p2_scorereg[16];
+          dff display_config_reg[16];
+          //dff random_seed_reg[16];
+          dff round_num_reg[16];
+          dff p1_button[16];
+          dff p2_button[16];
+          dff round_ans_reg[16];
+          dff round_countdown_reg[16];
+          dff p1_ban_reg[16];
+          dff p2_ban_reg[16];
+          dff free_regB[16];
+          dff free_regC[16];
+          dff free_regD[16];
+          dff free_regE[16];
+          dff free_regF[16];
+    }
+  }
+  
+  always {
+    // write port 
+    if(we){
+      case(write_address){
+          4h0: p1_scorereg.d = data;
+          4h1: p2_scorereg.d = data;
+          4h2: display_config_reg.d = data;
+          //b0011: random_seed_reg.d = data;
+          4h4: round_num_reg.d = data ; 
+          4h5: p1_button.d = data; 
+          4h6: p2_button.d = data; 
+          4h7: round_ans_reg.d = data;
+          4h8: round_countdown_reg.d = data; 
+          4h9: p1_ban_reg.d = data; 
+          4hA: p2_ban_reg.d = data;
+          4hB: free_regB.d = data;
+          4hC: free_regC.d = data;
+          4hD: free_regD.d = data; 
+          4hE: free_regE.d = data;
+          4hF: free_regF.d = data;
+          }
+      }
+    
+    // read port a 
+    case(read_address_a){
+          4h0: out_a = p1_scorereg.q;
+          4h1: out_a = p2_scorereg.q;
+          4h2: out_a = display_config_reg.q;
+          //b0011: out_a = random_seed_reg.q;
+          4h4: out_a = round_num_reg.q;
+          4h5: out_a = p1_button.q;
+          4h6: out_a = p2_button.q;
+          4h7: out_a = round_ans_reg.q;
+          4h8: out_a = round_countdown_reg.q;
+          4h9: out_a = p1_ban_reg.q;
+          4hA: out_a = p2_ban_reg.q;
+          4hB: out_a = free_regB.q;
+          4hC: out_a = free_regC.q;
+          4hD: out_a = free_regD.q;
+          4hE: out_a = free_regE.q;
+          4hF: out_a = free_regF.q;
+          default: out_a = b0 ; 
+      }
+          // read port b 
+    case(read_address_b){
+          4h0: out_b = p1_scorereg.q;
+          4h1: out_b = p2_scorereg.q;
+          4h2: out_b = display_config_reg.q;
+          //b0011: out_b = random_seed_reg.q;
+          4h4: out_b = round_num_reg.q;
+          4h5: out_b = p1_button.q;
+          4h6: out_b = p2_button.q;
+          4h7: out_b = round_ans_reg.q;
+          4h8: out_b = round_countdown_reg.q;
+          4h9: out_b = p1_ban_reg.q;
+          4hA: out_b = p2_ban_reg.q;
+          4hB: out_b = free_regB.q;
+          4hC: out_b = free_regC.q;
+          4hD: out_b = free_regD.q;
+          4hE: out_b = free_regE.q;
+          4hF: out_b = free_regF.q;
+          default: out_b = b0 ; 
+      }
+      
+      p1_score = p1_scorereg.q ; 
+      p2_score = p2_scorereg.q ; 
+      display_config = display_config_reg.q ; 
+      round_no  = round_num_reg.q ; 
+      count_down = round_countdown_reg.q;
+    
+      // debugg 
+      debugg_p1_button = p1_button.q[2:0]; 
+      debugregF = free_regF.q;
+      debugansreg = round_ans_reg.q[2:0];
+      debugp1ban = p1_ban_reg.q[0];
+      debugp2ban = p2_ban_reg.q[0];
+      debugp2btn = p2_button.q[2:0];
+  }
+}

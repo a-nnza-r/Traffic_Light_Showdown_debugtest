@@ -1,0 +1,144 @@
+module game_datapath_mod (
+    input clk,  // clock
+    input rst,  // reset
+    input buttons[6],
+    input reset_button,
+   
+    
+    output countdown[4],
+    output round_no[4],
+    output p1_score[4],
+    output p2_score[4],
+    output game_display[5],
+    
+
+    //debug
+    input next_state_btn,
+    input increase_time,
+    output current_state[6],
+    output asel_debug[3], 
+    output bsel_debug[3],
+    output wdsel_debug[3],
+    output debug_word[8],
+    output debug_p1button[3],
+    output debugansreg[3],
+    output debugp1ban,
+    output debugp2ban,
+    output debugp2btn[3],
+    output debugregF[16]
+  ) {
+    // intermediate singal for connecting 
+    // ASEL and BSEL to ALU 
+    sig asel_out[16];
+    sig bsel_out[16];
+
+    alu alu_unit;
+     
+    .clk(clk){
+    //edge_detector edge_detector_st(#RISE(1), #FALL(0));
+    .rst(reset_button){
+      random_round_genrator rrg_unit;
+      regfile_mod regfile_unit;
+      game_cu_mod game_cu;
+      //counter slow_timer(#SIZE(1),#DIV(27),#TOP(1));
+    }
+   }
+  
+  always{
+    //debug 
+    game_cu.next_ste_btn = next_state_btn ;
+    game_cu.slow_clock = increase_time;
+    
+    
+    //pass slow clock and rng values 
+    //edge_detector_st.in = slow_timer.value;
+    //game_cu.slow_clock = edge_detector_st.out; 
+    
+    //send button input to the CU
+    game_cu.buttons = buttons;
+    game_cu.reset_button = reset_button;
+    
+    //set up regfile 
+    regfile_unit.we = game_cu.we_regfile;
+    regfile_unit.write_address = game_cu.regfile_write_address;
+    
+    regfile_unit.read_address_a = game_cu.regfile_read_address_a;
+    regfile_unit.read_address_b = game_cu.regfile_read_address_b;
+    
+    //directly feeding regfile content from register rb 
+    // used for if else in branching fsm to different states 
+    game_cu.regfile_rb_direct = regfile_unit.out_b;
+    
+    //rrg unit 
+    rrg_unit.generate_next = game_cu.rrg_generate_next;
+
+
+    
+    //ASEL mux 
+    case(game_cu.asel){
+      3b000: asel_out = regfile_unit.out_a;
+      3b001: asel_out = 16h0007;
+      3b010: asel_out = 16h0008;
+      3b011: asel_out = 16h7FFF;
+      3b100: asel_out = 16h0000;
+      3b101: asel_out = 16h00F8;
+      default: asel_out = b0;
+    }
+    //BSEL mux 
+    case(game_cu.bsel){
+      3b000: bsel_out = regfile_unit.out_b;
+      3b001: bsel_out = 16h0003;
+      3b010: bsel_out = 16h0006;
+      3b011: bsel_out = 16h0000;
+      3b100: bsel_out = 16h0001;
+      3b001: bsel_out = 16h0038;
+      default: bsel_out = b0 ;
+    }
+    
+    //alu     
+    alu_unit.a = asel_out;
+    alu_unit.b = bsel_out;
+    alu_unit.inv = b0 ; 
+    alu_unit.alufn_signal = game_cu.alufn;
+    
+    
+    // wdsel mux 
+    case(game_cu.wdsel){
+      3b000: regfile_unit.data = alu_unit.out;
+      3b001: regfile_unit.data = 16h0001;
+      3b010: regfile_unit.data = 16h0003;
+      3b011: regfile_unit.data = 16h0005;
+      3b100: regfile_unit.data = 16h0000;
+      3b101: regfile_unit.data = rrg_unit.out ;
+      3b110: regfile_unit.data = buttons;
+      default: regfile_unit.data = 16h0000;
+    }
+    
+   // seg display mux 
+    case(game_cu.seg_sel){
+      b1: game_display = regfile_unit.display_config[4:0];
+      default: game_display = 5b11111; 
+    }
+     
+    // assigning ouputs 
+    countdown = regfile_unit.count_down[3:0];
+    round_no = regfile_unit.round_no[3:0];
+    p1_score = regfile_unit.p1_score[3:0];
+    p2_score = regfile_unit.p2_score[3:0];  
+    
+   
+    //debugg 
+    // debugging wdsel mux
+    asel_debug = game_cu.asel;
+    bsel_debug = game_cu.bsel;
+    wdsel_debug  =  game_cu.wdsel;
+    current_state = game_cu.current_state;
+    debug_word = rrg_unit.out;
+    debug_p1button = regfile_unit.debugg_p1_button;
+    debugansreg = regfile_unit.debugansreg;
+    debugp1ban = regfile_unit.debugp1ban;
+    debugp2ban = regfile_unit.debugp2ban;
+    debugp2btn = regfile_unit.debugp2btn;
+    debugregF = regfile_unit.debugregF;
+  }
+}

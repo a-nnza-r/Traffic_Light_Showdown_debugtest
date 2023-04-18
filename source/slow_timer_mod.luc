@@ -1,0 +1,16 @@
+module slow_timer_mod (
+    input clk,  // clock
+    input rst,  // reset
+    output out
+  ) {
+  
+  .clk(clk) {
+    .rst(rst){
+      counter slowclk(#SIZE(1),#DIV(27));
+    }
+  }
+
+  always {
+   out = slowclk.value; 
+  }
+}
